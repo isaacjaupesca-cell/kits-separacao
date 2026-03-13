@@ -703,15 +703,38 @@
       renderPrintPreview();
     }
 
-    document.getElementById('btnTestWebhook').addEventListener('click', () => {
-      try {
-        const payload = JSON.parse(els.webhookPayload.value);
-        log(`Webhook recebido de teste em ${els.webhookUrl.value}`, 'status-ok');
-        log(`Evento: ${payload.evento || 'desconhecido'} | Pedido: ${payload.id || payload.numero || 'n/a'}`);
-      } catch (err) {
-        log(`Payload inválido: ${err.message}`, 'status-err');
-      }
-    });
+<script>
+document.getElementById('btnTestWebhook').addEventListener('click', () => {
+  try {
+    const payload = JSON.parse(els.webhookPayload.value);
+
+    const newOrder = {
+      id: Number(payload.id || payload.numero || Date.now()),
+      marketplace: payload.marketplace || 'Tiny Teste',
+      status: 'novo',
+      customer: payload.cliente || 'Cliente de teste',
+      createdAt: new Date().toLocaleString('pt-BR'),
+      items: payload.items || [
+        { sku: 'KIT-TESTE-01', descricao: 'Kit de teste', qty: 1 }
+      ],
+    };
+
+    const idx = orders.findIndex(o => o.id === newOrder.id);
+
+    if (idx >= 0) {
+      orders[idx] = newOrder;
+      log(`Pedido ${newOrder.id} atualizado pelo payload de teste.`, 'status-warn');
+    } else {
+      orders.unshift(newOrder);
+      log(`Pedido ${newOrder.id} criado pelo payload de teste.`, 'status-ok');
+    }
+
+    renderAll();
+  } catch (err) {
+    log(`Payload inválido: ${err.message}`, 'status-err');
+  }
+});
+</script>
 
     document.getElementById('btnClearLog').addEventListener('click', () => {
       els.logArea.innerHTML = '';
