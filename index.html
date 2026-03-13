@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Separação Tiny - MVP</title>
+  <style>
+    :root {
+      --bg: #0f1115;
+      --panel: #171a21;
+      --panel-2: #1d222b;
+      --line: #2a313d;
+      --text: #e8edf5;
+      --muted: #9aa7b8;
+      --primary: #3b82f6;
+      --primary-2: #2563eb;
+      --success: #22c55e;
+      --warn: #f59e0b;
+      --danger: #ef4444;
+      --shadow: 0 12px 30px rgba(0,0,0,.28);
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, Arial, sans-serif;
+      background: linear-gradient(180deg, #0d1015 0%, #10141b 100%);
+      color: var(--text);
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      border-right: 1px solid var(--line);
+      background: rgba(12,15,20,.75);
+      backdrop-filter: blur(10px);
+      padding: 24px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 24px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    .brand p,
+    .help,
+    .small {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .block {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .block h2 {
+      margin: 0 0 12px;
+      font-size: 15px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    label {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    input, select, textarea, button {
+      font: inherit;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px 14px;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 110px;
+      resize: vertical;
+    }
+
+    .btn-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 12px;
+      padding: 12px 14px;
+      cursor: pointer;
+      color: white;
+      background: var(--primary);
+      transition: .18s ease;
+      font-weight: 600;
+    }
+
+    button:hover { background: var(--primary-2); }
+    .ghost {
+      background: transparent;
+      border: 1px solid var(--line);
+      color: var(--text);
+    }
+    .ghost:hover { background: #232a35; }
+    .warn { background: var(--warn); color: #111; }
+    .success { background: var(--success); color: #08140c; }
+
+    .main {
+      padding: 28px;
+      overflow: auto;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 22px;
+      flex-wrap: wrap;
+    }
+
+    .topbar h2 {
+      margin: 0;
+      font-size: 28px;
+    }
+
+    .muted { color: var(--muted); }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(150px, 1fr));
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .stat {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+
+    .stat .value {
+      font-size: 26px;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: 1.2fr 180px 180px 180px;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+      position: relative;
+      box-shadow: var(--shadow);
+    }
+
+    .card.selected {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 1px rgba(59,130,246,.35), var(--shadow);
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .market {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      background: #202837;
+      color: #dce6fb;
+      border: 1px solid #334155;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      background: #1f2937;
+      color: #cbd5e1;
+      border: 1px solid #374151;
+    }
+
+    .order-number {
+      font-size: 18px;
+      font-weight: 800;
+      margin: 12px 0 6px;
+    }
+
+    .items {
+      margin-top: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .item {
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .sku {
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .qty {
+      min-width: 56px;
+      text-align: right;
+      font-weight: 700;
+      color: #bfdbfe;
+    }
+
+    .footer-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .checkbox {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 18px;
+      height: 18px;
+      accent-color: var(--primary);
+    }
+
+    .layout-bottom {
+      margin-top: 22px;
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 18px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .panel h3 {
+      margin: 0 0 12px;
+      font-size: 18px;
+    }
+
+    .print-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 14px;
+    }
+
+    .print-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+    }
+
+    .log {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.55;
+      color: #c6d0df;
+      background: #0f131a;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+      max-height: 360px;
+      overflow: auto;
+      white-space: pre-wrap;
+    }
+
+    .status-ok { color: #4ade80; }
+    .status-warn { color: #fbbf24; }
+    .status-err { color: #f87171; }
+
+    @media (max-width: 1100px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { position: relative; height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+      .stats { grid-template-columns: repeat(2, minmax(160px, 1fr)); }
+      .toolbar { grid-template-columns: 1fr 1fr; }
+      .layout-bottom { grid-template-columns: 1fr; }
+    }
+
+    @media print {
+      .sidebar, .topbar, .toolbar, .cards, .log-panel { display: none !important; }
+      body, .main, .panel { background: white !important; color: black !important; box-shadow: none !important; }
+      .print-line { border: 1px solid #ccc; background: white !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <h1>Separação Tiny</h1>
+        <p>Protótipo de picking de kits sem explosão de composição.</p>
+      </div>
+
+      <section class="block">
+        <h2>Teste de webhook</h2>
+        <div class="field">
+          <label>URL do endpoint</label>
+          <input id="webhookUrl" value="https://seu-dominio.com/webhook/tiny" />
+        </div>
+        <div class="field">
+          <label>Payload de teste</label>
+          <textarea id="webhookPayload">{
+  "evento": "pedido.alterado",
+  "id": 10231,
+  "numero": "10231",
+  "marketplace": "Shopee"
+}</textarea>
+        </div>
+        <div class="btn-row">
+          <button id="btnTestWebhook">Simular</button>
+          <button class="ghost" id="btnClearLog">Limpar</button>
+        </div>
+      </section>
+
+      <section class="block">
+        <h2>Filtros</h2>
+        <div class="field">
+          <label>Marketplace</label>
+          <select id="filterMarketplace">
+            <option value="">Todos</option>
+            <option value="Shopee">Shopee</option>
+            <option value="Mercado Livre">Mercado Livre</option>
+            <option value="Magalu">Magalu</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Buscar pedido / SKU</label>
+          <input id="filterSearch" placeholder="Ex.: 10231 ou KIT-PESCA-01" />
+        </div>
+        <div class="btn-row">
+          <button class="ghost" id="btnSelectVisible">Selecionar visíveis</button>
+          <button class="ghost" id="btnUnselectAll">Limpar</button>
+        </div>
+      </section>
+
+      <section class="block">
+        <h2>Ajuda rápida</h2>
+        <p class="help">
+          1. Recebe webhook do Tiny.<br>
+          2. Salva pedido e itens vendidos.<br>
+          3. Exibe só os kits/SKUs pais.<br>
+          4. Imprime por pedido ou agrupado.
+        </p>
+      </section>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div>
+          <h2>Painel de separação</h2>
+          <p class="muted">Cards por pedido, seleção múltipla e impressão personalizada.</p>
+        </div>
+        <div class="row">
+          <button class="ghost" id="btnCreateBatch">Criar lote</button>
+          <button class="warn" id="btnPrintOrders">Imprimir por pedido</button>
+          <button class="success" id="btnPrintGrouped">Imprimir agrupado</button>
+        </div>
+      </div>
+
+      <section class="stats">
+        <div class="stat"><div class="value" id="statPedidos">0</div><div class="muted">Pedidos visíveis</div></div>
+        <div class="stat"><div class="value" id="statSelecionados">0</div><div class="muted">Selecionados</div></div>
+        <div class="stat"><div class="value" id="statSkus">0</div><div class="muted">SKUs totais</div></div>
+        <div class="stat"><div class="value" id="statMercados">0</div><div class="muted">Marketplaces</div></div>
+      </section>
+
+      <section class="toolbar">
+        <input id="toolbarSearch" placeholder="Buscar pedidos ou SKUs..." />
+        <select id="toolbarMarketplace">
+          <option value="">Marketplace</option>
+          <option value="Shopee">Shopee</option>
+          <option value="Mercado Livre">Mercado Livre</option>
+          <option value="Magalu">Magalu</option>
+        </select>
+        <select id="toolbarSort">
+          <option value="recent">Mais recentes</option>
+          <option value="marketplace">Marketplace</option>
+          <option value="items">Qtd. itens</option>
+        </select>
+        <button class="ghost" id="btnReloadMock">Recarregar mock</button>
+      </section>
+
+      <section class="cards" id="cards"></section>
+
+      <section class="layout-bottom">
+        <div class="panel">
+          <h3>Prévia de impressão</h3>
+          <div class="row" style="margin-bottom: 12px;">
+            <span class="muted">Modo atual: <strong id="printModeLabel">Agrupado</strong></span>
+            <span class="tag" id="batchLabel">Sem lote</span>
+          </div>
+          <div class="print-list" id="printPreview"></div>
+        </div>
+
+        <div class="panel log-panel">
+          <h3>Log / webhook</h3>
+          <div class="log" id="logArea"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const mockOrders = [
+      {
+        id: 10231,
+        marketplace: 'Shopee',
+        status: 'novo',
+        customer: 'Cliente Shopee A',
+        createdAt: '2026-03-12 09:10',
+        items: [
+          { sku: 'KIT-PESCA-01', descricao: 'Kit Pesca 01', qty: 2 },
+          { sku: 'KIT-TUCUNARE-05', descricao: 'Kit Tucunaré 05', qty: 1 },
+        ],
+      },
+      {
+        id: 10232,
+        marketplace: 'Mercado Livre',
+        status: 'novo',
+        customer: 'Cliente ML B',
+        createdAt: '2026-03-12 09:14',
+        items: [
+          { sku: 'KIT-PESCA-01', descricao: 'Kit Pesca 01', qty: 1 },
+          { sku: 'KIT-CARPA-02', descricao: 'Kit Carpa 02', qty: 2 },
+        ],
+      },
+      {
+        id: 10233,
+        marketplace: 'Shopee',
+        status: 'novo',
+        customer: 'Cliente Shopee C',
+        createdAt: '2026-03-12 09:18',
+        items: [
+          { sku: 'KIT-TUCUNARE-05', descricao: 'Kit Tucunaré 05', qty: 2 },
+          { sku: 'KIT-CARPA-02', descricao: 'Kit Carpa 02', qty: 1 },
+        ],
+      },
+      {
+        id: 10234,
+        marketplace: 'Magalu',
+        status: 'novo',
+        customer: 'Cliente Magalu D',
+        createdAt: '2026-03-12 09:23',
+        items: [
+          { sku: 'KIT-PESCA-01', descricao: 'Kit Pesca 01', qty: 2 },
+        ],
+      },
+    ];
+
+    let orders = structuredClone(mockOrders);
+    let selected = new Set();
+    let printMode = 'grouped';
+    let batchId = null;
+
+    const els = {
+      cards: document.getElementById('cards'),
+      logArea: document.getElementById('logArea'),
+      statPedidos: document.getElementById('statPedidos'),
+      statSelecionados: document.getElementById('statSelecionados'),
+      statSkus: document.getElementById('statSkus'),
+      statMercados: document.getElementById('statMercados'),
+      filterMarketplace: document.getElementById('filterMarketplace'),
+      filterSearch: document.getElementById('filterSearch'),
+      toolbarMarketplace: document.getElementById('toolbarMarketplace'),
+      toolbarSearch: document.getElementById('toolbarSearch'),
+      toolbarSort: document.getElementById('toolbarSort'),
+      printPreview: document.getElementById('printPreview'),
+      printModeLabel: document.getElementById('printModeLabel'),
+      batchLabel: document.getElementById('batchLabel'),
+      webhookPayload: document.getElementById('webhookPayload'),
+      webhookUrl: document.getElementById('webhookUrl'),
+    };
+
+    function log(message, cls = '') {
+      const line = document.createElement('div');
+      if (cls) line.className = cls;
+      line.textContent = `[${new Date().toLocaleTimeString('pt-BR')}] ${message}`;
+      els.logArea.prepend(line);
+    }
+
+    function getFilters() {
+      const marketplace = els.toolbarMarketplace.value || els.filterMarketplace.value;
+      const search = (els.toolbarSearch.value || els.filterSearch.value || '').trim().toUpperCase();
+      const sort = els.toolbarSort.value;
+      return { marketplace, search, sort };
+    }
+
+    function getVisibleOrders() {
+      const { marketplace, search, sort } = getFilters();
+      let list = orders.filter(order => {
+        const marketOk = !marketplace || order.marketplace === marketplace;
+        const searchBase = `${order.id} ${order.customer} ${order.marketplace} ${order.items.map(i => `${i.sku} ${i.descricao}`).join(' ')}`.toUpperCase();
+        const searchOk = !search || searchBase.includes(search);
+        return marketOk && searchOk;
+      });
+
+      if (sort === 'marketplace') {
+        list.sort((a, b) => a.marketplace.localeCompare(b.marketplace));
+      } else if (sort === 'items') {
+        list.sort((a, b) => b.items.reduce((s, i) => s + i.qty, 0) - a.items.reduce((s, i) => s + i.qty, 0));
+      } else {
+        list.sort((a, b) => b.id - a.id);
+      }
+
+      return list;
+    }
+
+    function renderCards() {
+      const visible = getVisibleOrders();
+      els.cards.innerHTML = '';
+
+      visible.forEach(order => {
+        const card = document.createElement('article');
+        card.className = `card ${selected.has(order.id) ? 'selected' : ''}`;
+
+        const totalItems = order.items.reduce((sum, item) => sum + item.qty, 0);
+
+        card.innerHTML = `
+          <input class="checkbox" type="checkbox" ${selected.has(order.id) ? 'checked' : ''} />
+          <div class="row">
+            <span class="market">📦 ${order.marketplace}</span>
+            <span class="tag">${order.status}</span>
+          </div>
+          <div class="order-number">Pedido ${order.id}</div>
+          <div class="small">${order.customer}</div>
+          <div class="small muted" style="margin-top:6px;">${order.createdAt} • ${totalItems} item(ns)</div>
+          <div class="items">
+            ${order.items.map(item => `
+              <div class="item">
+                <div>
+                  <div class="sku">${item.sku}</div>
+                  <div class="small muted">${item.descricao}</div>
+                </div>
+                <div class="qty">${item.qty}x</div>
+              </div>
+            `).join('')}
+          </div>
+          <div class="footer-actions">
+            <button class="ghost btn-toggle">${selected.has(order.id) ? 'Desmarcar' : 'Selecionar'}</button>
+            <button class="ghost btn-print-one">Prévia</button>
+          </div>
+        `;
+
+        card.querySelector('.checkbox').addEventListener('change', () => toggleSelection(order.id));
+        card.querySelector('.btn-toggle').addEventListener('click', () => toggleSelection(order.id));
+        card.querySelector('.btn-print-one').addEventListener('click', () => {
+          selected = new Set([order.id]);
+          printMode = 'order';
+          renderAll();
+        });
+
+        els.cards.appendChild(card);
+      });
+
+      updateStats(visible);
+    }
+
+    function updateStats(visible) {
+      const marketplaces = new Set(visible.map(o => o.marketplace));
+      const totalSkus = visible.reduce((sum, order) => sum + order.items.reduce((s, item) => s + item.qty, 0), 0);
+      els.statPedidos.textContent = visible.length;
+      els.statSelecionados.textContent = selected.size;
+      els.statSkus.textContent = totalSkus;
+      els.statMercados.textContent = marketplaces.size;
+    }
+
+    function toggleSelection(orderId) {
+      if (selected.has(orderId)) selected.delete(orderId);
+      else selected.add(orderId);
+      renderAll();
+    }
+
+    function getSelectedOrders() {
+      return orders.filter(order => selected.has(order.id));
+    }
+
+    function buildGroupedPreview() {
+      const map = new Map();
+      for (const order of getSelectedOrders()) {
+        for (const item of order.items) {
+          const cur = map.get(item.sku) || { sku: item.sku, descricao: item.descricao, qty: 0 };
+          cur.qty += item.qty;
+          map.set(item.sku, cur);
+        }
+      }
+      return Array.from(map.values()).sort((a, b) => a.sku.localeCompare(b.sku));
+    }
+
+    function renderPrintPreview() {
+      els.printPreview.innerHTML = '';
+      els.printModeLabel.textContent = printMode === 'grouped' ? 'Agrupado' : 'Por pedido';
+      els.batchLabel.textContent = batchId ? `Lote #${batchId}` : 'Sem lote';
+
+      const selectedOrders = getSelectedOrders();
+      if (!selectedOrders.length) {
+        els.printPreview.innerHTML = '<div class="small muted">Selecione pelo menos um pedido.</div>';
+        return;
+      }
+
+      if (printMode === 'grouped') {
+        const grouped = buildGroupedPreview();
+        grouped.forEach(item => {
+          const line = document.createElement('div');
+          line.className = 'print-line';
+          line.innerHTML = `<strong>${item.sku}</strong><span>${item.qty}x</span>`;
+          els.printPreview.appendChild(line);
+        });
+        return;
+      }
+
+      selectedOrders.forEach(order => {
+        const title = document.createElement('div');
+        title.className = 'print-line';
+        title.innerHTML = `<strong>Pedido ${order.id}</strong><span>${order.marketplace}</span>`;
+        els.printPreview.appendChild(title);
+
+        order.items.forEach(item => {
+          const line = document.createElement('div');
+          line.className = 'print-line';
+          line.innerHTML = `<span>${item.sku}</span><strong>${item.qty}x</strong>`;
+          els.printPreview.appendChild(line);
+        });
+      });
+    }
+
+    function renderAll() {
+      renderCards();
+      renderPrintPreview();
+    }
+
+    document.getElementById('btnTestWebhook').addEventListener('click', () => {
+      try {
+        const payload = JSON.parse(els.webhookPayload.value);
+        log(`Webhook recebido de teste em ${els.webhookUrl.value}`, 'status-ok');
+        log(`Evento: ${payload.evento || 'desconhecido'} | Pedido: ${payload.id || payload.numero || 'n/a'}`);
+      } catch (err) {
+        log(`Payload inválido: ${err.message}`, 'status-err');
+      }
+    });
+
+    document.getElementById('btnClearLog').addEventListener('click', () => {
+      els.logArea.innerHTML = '';
+    });
+
+    document.getElementById('btnSelectVisible').addEventListener('click', () => {
+      getVisibleOrders().forEach(order => selected.add(order.id));
+      renderAll();
+    });
+
+    document.getElementById('btnUnselectAll').addEventListener('click', () => {
+      selected.clear();
+      renderAll();
+    });
+
+    document.getElementById('btnPrintGrouped').addEventListener('click', () => {
+      printMode = 'grouped';
+      renderPrintPreview();
+      log('Prévia alterada para impressão agrupada.', 'status-warn');
+    });
+
+    document.getElementById('btnPrintOrders').addEventListener('click', () => {
+      printMode = 'order';
+      renderPrintPreview();
+      log('Prévia alterada para impressão por pedido.', 'status-warn');
+    });
+
+    document.getElementById('btnCreateBatch').addEventListener('click', () => {
+      if (!selected.size) {
+        log('Nenhum pedido selecionado para criar lote.', 'status-err');
+        return;
+      }
+      batchId = Math.floor(Math.random() * 90000) + 10000;
+      renderPrintPreview();
+      log(`Lote #${batchId} criado com ${selected.size} pedido(s).`, 'status-ok');
+    });
+
+    document.getElementById('btnReloadMock').addEventListener('click', () => {
+      orders = structuredClone(mockOrders);
+      renderAll();
+      log('Mock recarregado.', 'status-ok');
+    });
+
+    [els.filterMarketplace, els.filterSearch, els.toolbarMarketplace, els.toolbarSearch, els.toolbarSort]
+      .forEach(el => el.addEventListener('input', renderAll));
+
+    log('Interface inicial carregada.', 'status-ok');
+    log('Próximo passo: conectar webhook real do Tiny e persistir pedidos em banco.');
+    renderAll();
+  </script>
+</body>
+</html>
+```
+
+---
+
+## Sobre o link que você mandou
+O endereço veio como:
+`ttps://raw.githubusercontent.com/isaacjaupesca-cell/kits-cache/main/separacao-tiny`
+
+Ele está com dois problemas prováveis:
+- faltou o `h` no `https`
+- parece faltar o **nome do arquivo** e extensão (`.html`, `.json`, etc.)
+
+Então eu não consegui validar esse conteúdo a partir do link. Se você me mandar o caminho completo, eu já adapto essa interface para usar exatamente esse arquivo do seu repositório.
+
+## Melhor próximo passo para o teste do Tiny
+1. Subir essa interface estática.
+2. Criar um endpoint simples de webhook.
+3. Fazer o Tiny disparar 1 pedido de teste.
+4. Logar o payload bruto.
+5. A partir do payload real, eu monto o parser e a estrutura do banco.
+
+Se você quiser, no próximo passo eu já te entrego o **backend mínimo** em Flask para:
+- receber webhook do Tiny
+- salvar o JSON bruto
+- listar os pedidos nessa interface.
