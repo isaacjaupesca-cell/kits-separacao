@@ -703,7 +703,7 @@
       renderPrintPreview();
     }
 
-<script>
+
 document.getElementById('btnTestWebhook').addEventListener('click', () => {
   try {
     const payload = JSON.parse(els.webhookPayload.value);
@@ -711,7 +711,7 @@ document.getElementById('btnTestWebhook').addEventListener('click', () => {
     const newOrder = {
       id: Number(payload.id || payload.numero || Date.now()),
       marketplace: payload.marketplace || 'Tiny Teste',
-      status: 'novo',
+      status: payload.status || 'novo',
       customer: payload.cliente || 'Cliente de teste',
       createdAt: new Date().toLocaleString('pt-BR'),
       items: payload.items || [
@@ -729,12 +729,14 @@ document.getElementById('btnTestWebhook').addEventListener('click', () => {
       log(`Pedido ${newOrder.id} criado pelo payload de teste.`, 'status-ok');
     }
 
+    log(`Webhook recebido de teste em ${els.webhookUrl.value}`, 'status-ok');
+    log(`Evento: ${payload.evento || 'desconhecido'} | Pedido: ${newOrder.id}`);
+
     renderAll();
   } catch (err) {
     log(`Payload inválido: ${err.message}`, 'status-err');
   }
 });
-</script>
 
     document.getElementById('btnClearLog').addEventListener('click', () => {
       els.logArea.innerHTML = '';
@@ -787,28 +789,3 @@ document.getElementById('btnTestWebhook').addEventListener('click', () => {
   </script>
 </body>
 </html>
-```
-
----
-
-## Sobre o link que você mandou
-O endereço veio como:
-`ttps://raw.githubusercontent.com/isaacjaupesca-cell/kits-cache/main/separacao-tiny`
-
-Ele está com dois problemas prováveis:
-- faltou o `h` no `https`
-- parece faltar o **nome do arquivo** e extensão (`.html`, `.json`, etc.)
-
-Então eu não consegui validar esse conteúdo a partir do link. Se você me mandar o caminho completo, eu já adapto essa interface para usar exatamente esse arquivo do seu repositório.
-
-## Melhor próximo passo para o teste do Tiny
-1. Subir essa interface estática.
-2. Criar um endpoint simples de webhook.
-3. Fazer o Tiny disparar 1 pedido de teste.
-4. Logar o payload bruto.
-5. A partir do payload real, eu monto o parser e a estrutura do banco.
-
-Se você quiser, no próximo passo eu já te entrego o **backend mínimo** em Flask para:
-- receber webhook do Tiny
-- salvar o JSON bruto
-- listar os pedidos nessa interface.
